@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Block Buster</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: black;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            display: block;
+            margin: 50px auto;
+            border: 2px solid white;
+        }
+        #scoreboard {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+        }
+        #bestScoreboard {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            color: black;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        .modal button {
+            padding: 10px 20px;
+            background-color: black;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div id="scoreboard">
+        <p>Score: <span id="score">0</span></p>
+    </div>
+    <div id="bestScoreboard">
+        <p>Best Score: <span id="best-score">0</span></p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="gameOverModal" class="modal">
+        <h2>Game Over</h2>
+        <p>Your Score: <span id="finalScore">0</span></p>
+        <p>Best Score: <span id="finalBestScore">0</span></p>
+        <button id="restartGame">Restart Game</button>
+    </div>
+
+    <div id="startGameModal" class="modal">
+        <h2>Welcome to Block Buster</h2>
+        <p>Best Score: <span id="welcomeBestScore">0</span></p>
+        <button id="startGame">Start Game</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const bestScoreElement = document.getElementById('best-score');
+        const gameOverModal = document.getElementById('gameOverModal');
+        const finalScore = document.getElementById('finalScore');
+        const finalBestScore = document.getElementById('finalBestScore');
+        const restartGameButton = document.getElementById('restartGame');
+        const startGameModal = document.getElementById('startGameModal');
+        const welcomeBestScore = document.getElementById('welcomeBestScore');
+        const startGameButton = document.getElementById('startGame');
+
+        canvas.width = 400;
+        canvas.height = 600;
+
+        const player = {
+            x: canvas.width / 2 - 10,
+            y: canvas.height - 30,
+            width: 20,
+            height: 20,
+            speed: 7,
+            dx: 0
+        };
+
+        const blocks = [];
+        const blockSize = 20;
+        const blockSpeed = 5; // Increased speed
+        let isGameOver = false;
+
+        for (let i = 0; i < 10; i++) { // Increased spawn count
+            blocks.push({
+                x: Math.random() * (canvas.width - blockSize),
+                y: -Math.random() * canvas.height,
+                width: blockSize,
+                height: blockSize
+            });
+        }
+
+        let score = localStorage.getItem('currentScore') ? parseInt(localStorage.getItem('currentScore')) : 0;
+        scoreElement.textContent = score;
+
+        let bestScore = localStorage.getItem('bestScore') ? parseInt(localStorage.getItem('bestScore')) : 0;
+        bestScoreElement.textContent = bestScore;
+        welcomeBestScore.textContent = bestScore;
+
+        function showGameOverModal() {
+            finalScore.textContent = score;
+            finalBestScore.textContent = bestScore;
+            gameOverModal.style.display = 'block';
+            cancelAnimationFrame(gameLoopId); // Stop all animations
+            isGameOver = true;
+        }
+        function restartGame() {
+    score = 0;  // Reset score
+    localStorage.setItem('currentScore', score);
+    scoreElement.textContent = score;
+    gameOverModal.style.display = 'none';
+    
+    // Reset blocks' positions
+    blocks.forEach(block => {
+        block.y = -Math.random() * canvas.height;
+        block.x = Math.random() * (canvas.width - blockSize);
+    });
+    
+    isGameOver = false;
+    
+    // Restart the game loop
+    gameLoop();
+}
+
+
+        function startGame() {
+            startGameModal.style.display = 'none';
+            gameLoop();
+        }
+
+        function update() {
+            if (isGameOver) return;
+
+            player.x += player.dx;
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            blocks.forEach(block => {
+                block.y += blockSpeed;
+                if (block.y > canvas.height) {
+                    block.y = -blockSize;
+                    block.x = Math.random() * (canvas.width - blockSize);
+                    score++;
+                    localStorage.setItem('currentScore', score);
+                    scoreElement.textContent = score;
+                }
+                if (
+                    player.x < block.x + block.width &&
+                    player.x + player.width > block.x &&
+                    player.y < block.y + block.height &&
+                    player.y + player.height > block.y
+                ) {
+                    if (score > bestScore) {
+                        bestScore = score;
+                        localStorage.setItem('bestScore', bestScore);
+                        bestScoreElement.textContent = bestScore;
+                    }
+                    showGameOverModal();
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.fillStyle = 'white';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+
+            ctx.fillStyle = 'red';
+            blocks.forEach(block => {
+                ctx.fillRect(block.x, block.y, block.width, block.height);
+            });
+        }
+          // Function to generate a new block position
+function generateBlockPosition() {
+    let isOverlapping;
+    let newBlockPosition;
+
+    do {
+        // Generate a random position for the block
+        newBlockPosition = {
+            x: Math.random() * (canvas.width - blockSize),
+            y: -Math.random() * canvas.height,
+        };
+
+        // Check if the new block overlaps with any existing block
+        isOverlapping = blocks.some(block => {
+            return newBlockPosition.x < block.x + block.width &&
+                   newBlockPosition.x + block.width > block.x &&
+                   newBlockPosition.y < block.y + block.height &&
+                   newBlockPosition.y + block.height > block.y;
+        });
+
+    } while (isOverlapping);  // Repeat if there's an overlap
+
+    return newBlockPosition;
+}
+
+// Update the initial block setup to use the generateBlockPosition function
+for (let i = 0; i < 8; i++) { // Increased spawn count
+    blocks.push(generateBlockPosition());
+}
+
+        let gameLoopId;
+        function gameLoop() {
+            update();
+            draw();
+            gameLoopId = requestAnimationFrame(gameLoop);
+        }
+
+        function movePlayer(e) {
+            if (e.key === 'ArrowLeft') player.dx = -player.speed;
+            if (e.key === 'ArrowRight') player.dx = player.speed;
+        }
+
+        function stopPlayer(e) {
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
+        }
+
+        document.addEventListener('keydown', movePlayer);
+        document.addEventListener('keyup', stopPlayer);
+        restartGameButton.addEventListener('click', restartGame);
+        startGameButton.addEventListener('click', startGame);
+
+        // Show start modal on page load
+        startGameModal.style.display = 'block';
+    </script>
+</body>
+</html>
