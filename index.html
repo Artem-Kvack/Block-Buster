@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -32,7 +31,7 @@
             position: absolute;
             top: 10px;
             right: 10px;
-            color: rgb(227, 227, 227);
+            color: white;
         }
 
         .modal {
@@ -98,18 +97,22 @@
         canvas.width = 400;
         canvas.height = 600;
 
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const playerSpeed = isMobile ? 15 : 8;
+
         const player = {
             x: canvas.width / 2 - 10,
             y: canvas.height - 30,
             width: 15,
             height: 15,
-            speed: 8,
+            speed: playerSpeed,
             dx: 0
         };
 
         const blocks = [];
         const blockSize = 20;
-        let blockSpeed = 5; // Начальная скорость блоков
+        const initialBlockSpeed = 6;
+        let blockSpeed = initialBlockSpeed;
         let isGameOver = false;
 
         for (let i = 0; i < 10; i++) {
@@ -137,23 +140,18 @@
         }
 
         function restartGame() {
-            score = 0; // Сброс текущего счета
+            score = 0;
+            blockSpeed = initialBlockSpeed;
             localStorage.setItem('currentScore', score);
             scoreElement.textContent = score;
-
             gameOverModal.style.display = 'none';
 
-            // Сброс позиции блоков
             blocks.forEach(block => {
                 block.y = -Math.random() * canvas.height;
                 block.x = Math.random() * (canvas.width - blockSize);
             });
 
-            blockSpeed = 5; // Сброс скорости блоков до начального значения
-
             isGameOver = false;
-
-            // Перезапуск игрового цикла
             gameLoop();
         }
 
@@ -177,11 +175,6 @@
                     score++;
                     localStorage.setItem('currentScore', score);
                     scoreElement.textContent = score;
-
-                    // Увеличение скорости блоков каждые 10 очков
-                    if (score % 10 === 0) {
-                        blockSpeed += 0.5;
-                    }
                 }
                 if (
                     player.x < block.x + block.width &&
