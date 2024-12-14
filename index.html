@@ -1,5 +1,7 @@
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,23 +14,27 @@
             color: white;
             font-family: Arial, sans-serif;
         }
+
         canvas {
             display: block;
             margin: 50px auto;
             border: 2px solid white;
         }
+
         #scoreboard {
             position: absolute;
             top: 10px;
             left: 10px;
             color: white;
         }
+
         #bestScoreboard {
             position: absolute;
             top: 10px;
             right: 10px;
-            color: white;
+            color: rgb(227, 227, 227);
         }
+
         .modal {
             display: none;
             position: fixed;
@@ -42,6 +48,7 @@
             text-align: center;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
+
         .modal button {
             padding: 10px 20px;
             background-color: black;
@@ -52,6 +59,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="scoreboard">
         <p>Score: <span id="score">0</span></p>
@@ -101,10 +109,10 @@
 
         const blocks = [];
         const blockSize = 20;
-        const blockSpeed = 6; // Increased speed
+        let blockSpeed = 5; // Начальная скорость блоков
         let isGameOver = false;
 
-        for (let i = 0; i < 10; i++) { // Increased spawn count
+        for (let i = 0; i < 10; i++) {
             blocks.push({
                 x: Math.random() * (canvas.width - blockSize),
                 y: -Math.random() * canvas.height,
@@ -124,27 +132,30 @@
             finalScore.textContent = score;
             finalBestScore.textContent = bestScore;
             gameOverModal.style.display = 'block';
-            cancelAnimationFrame(gameLoopId); // Stop all animations
+            cancelAnimationFrame(gameLoopId);
             isGameOver = true;
         }
-        function restartGame() {
-    score = 0;  // Reset score
-    localStorage.setItem('currentScore', score);
-    scoreElement.textContent = score;
-    gameOverModal.style.display = 'none';
-    
-    // Reset blocks' positions
-    blocks.forEach(block => {
-        block.y = -Math.random() * canvas.height;
-        block.x = Math.random() * (canvas.width - blockSize);
-    });
-    
-    isGameOver = false;
-    
-    // Restart the game loop
-    gameLoop();
-}
 
+        function restartGame() {
+            score = 0; // Сброс текущего счета
+            localStorage.setItem('currentScore', score);
+            scoreElement.textContent = score;
+
+            gameOverModal.style.display = 'none';
+
+            // Сброс позиции блоков
+            blocks.forEach(block => {
+                block.y = -Math.random() * canvas.height;
+                block.x = Math.random() * (canvas.width - blockSize);
+            });
+
+            blockSpeed = 5; // Сброс скорости блоков до начального значения
+
+            isGameOver = false;
+
+            // Перезапуск игрового цикла
+            gameLoop();
+        }
 
         function startGame() {
             startGameModal.style.display = 'none';
@@ -166,6 +177,11 @@
                     score++;
                     localStorage.setItem('currentScore', score);
                     scoreElement.textContent = score;
+
+                    // Увеличение скорости блоков каждые 10 очков
+                    if (score % 10 === 0) {
+                        blockSpeed += 0.5;
+                    }
                 }
                 if (
                     player.x < block.x + block.width &&
@@ -194,35 +210,6 @@
                 ctx.fillRect(block.x, block.y, block.width, block.height);
             });
         }
-          // Function to generate a new block position
-function generateBlockPosition() {
-    let isOverlapping;
-    let newBlockPosition;
-
-    do {
-        // Generate a random position for the block
-        newBlockPosition = {
-            x: Math.random() * (canvas.width - blockSize),
-            y: -Math.random() * canvas.height,
-        };
-
-        // Check if the new block overlaps with any existing block
-        isOverlapping = blocks.some(block => {
-            return newBlockPosition.x < block.x + block.width &&
-                   newBlockPosition.x + block.width > block.x &&
-                   newBlockPosition.y < block.y + block.height &&
-                   newBlockPosition.y + block.height > block.y;
-        });
-
-    } while (isOverlapping);  // Repeat if there's an overlap
-
-    return newBlockPosition;
-}
-
-// Update the initial block setup to use the generateBlockPosition function
-for (let i = 0; i < 8; i++) { // Increased spawn count
-    blocks.push(generateBlockPosition());
-}
 
         let gameLoopId;
         function gameLoop() {
@@ -240,6 +227,27 @@ for (let i = 0; i < 8; i++) { // Increased spawn count
             if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
         }
 
+        // Touch events for mobile support
+        let touchStartX = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchStartX = touch.clientX;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            const touchX = touch.clientX;
+
+            const deltaX = touchX - touchStartX;
+            player.x += deltaX * 0.1;
+
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+
+            touchStartX = touchX;
+        });
+
         document.addEventListener('keydown', movePlayer);
         document.addEventListener('keyup', stopPlayer);
         restartGameButton.addEventListener('click', restartGame);
@@ -249,4 +257,5 @@ for (let i = 0; i < 8; i++) { // Increased spawn count
         startGameModal.style.display = 'block';
     </script>
 </body>
+
 </html>
